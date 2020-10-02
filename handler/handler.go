@@ -45,7 +45,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			UploadAt: time.Now().Format("2006-01-02 15:04:05"),
 		}
 
-		//创建一个本地的文件来接收文件流
+		// //创建一个本地的文件来接收文件流
 		newFile, err := os.Create(fileMeta.Location) //创建文件
 		if err != nil {
 			fmt.Printf("Failed to create file, err:%s", err.Error())
@@ -59,9 +59,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		newFile.Seek(0, 0) //Seek设置下一次读/写的位置。offset为相对偏移量，而whence决定相对位置：0为相对文件开头，1为相对当前位置，2为相对文件结尾。
+		// newFile.Seek(0, 0) //Seek设置下一次读/写的位置。offset为相对偏移量，而whence决定相对位置：0为相对文件开头，1为相对当前位置，2为相对文件结尾。
 		fileMeta.FileSha1 = util.FileSha1(newFile)
-		meta.UpdateFileMeta(fileMeta)
+		//meta.UpdateFileMeta(fileMeta)
+		_ = meta.UpdateFileMetaDB(fileMeta)
 
 		http.Redirect(w, r, "/file/upload/suc", http.StatusFound) //上传完成，重定向到上传成功的网页url
 	}
@@ -77,7 +78,13 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm() //解析
 
 	filehash := r.Form["filehash"][0]
-	fMeta := meta.GetFileMeta(filehash)
+	//fMeta := meta.GetFileMeta(filehash)
+	fMeta, err := meta.GetFileMetaDB(filehash)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	data, err := json.Marshal(fMeta)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
