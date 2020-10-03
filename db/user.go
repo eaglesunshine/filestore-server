@@ -5,32 +5,40 @@ import (
 	"fmt"
 )
 
-//UserSignup: 通过用户名和密码完成用户注册操作
+// User : 用户表model
+type User struct {
+	Username     string
+	Email        string
+	Phone        string
+	SignupAt     string
+	LastActiveAt string
+	Status       int
+}
+
+// UserSignup : 通过用户名及密码完成user表的注册操作
 func UserSignup(username string, passwd string) bool {
 	stmt, err := mydb.DBConn().Prepare(
-		"insert ignore into tbl_user (`user_name`, `user_pwd`) values (?, ?)")
+		"insert ignore into tbl_user (`user_name`,`user_pwd`) values (?,?)")
 	if err != nil {
-		fmt.Println("Failed to insert, err:%s" + err.Error())
+		fmt.Println("Failed to insert, err:" + err.Error())
 		return false
 	}
 	defer stmt.Close()
 
 	ret, err := stmt.Exec(username, passwd)
 	if err != nil {
-		fmt.Println("Failed to insert, err:%s" + err.Error())
+		fmt.Println("Failed to insert, err:" + err.Error())
 		return false
 	}
-	//判断表中是否有username重复
-	if rowsAffected, err := ret.RowsAffected(); err == nil && rowsAffected > 0 {
+	if rowsAffected, err := ret.RowsAffected(); nil == err && rowsAffected > 0 {
 		return true
 	}
 	return false
 }
 
-//UserSignIn: 判断用户名和密码是否正确
-func UserSignIn(username string, enc_passwd string) bool {
-	stmt, err := mydb.DBConn().Prepare(
-		"select * from tbl_user where user_name=? limit 1")
+// UserSignin : 判断密码是否一致
+func UserSignin(username string, encpwd string) bool {
+	stmt, err := mydb.DBConn().Prepare("select * from tbl_user where user_name=? limit 1")
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -47,16 +55,16 @@ func UserSignIn(username string, enc_passwd string) bool {
 	}
 
 	pRows := mydb.ParseRows(rows)
-	if len(pRows) > 0 && string(pRows[0]["user_pwd"].([]byte)) == enc_passwd {
+	if len(pRows) > 0 && string(pRows[0]["user_pwd"].([]byte)) == encpwd {
 		return true
 	}
 	return false
 }
 
-//UpdateToken: 刷新用户登录token
+// UpdateToken : 刷新用户登录的token
 func UpdateToken(username string, token string) bool {
 	stmt, err := mydb.DBConn().Prepare(
-		"replace into tbl_user_token (`user_name`,`user_token`) values (?, ?)")
+		"replace into tbl_user_token (`user_name`,`user_token`) values (?,?)")
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -71,15 +79,7 @@ func UpdateToken(username string, token string) bool {
 	return true
 }
 
-type User struct {
-	Username     string
-	Email        string
-	Phone        string
-	SignupAt     string
-	LastActiveAt string
-	Status       int
-}
-
+// GetUserInfo : 查询用户信息
 func GetUserInfo(username string) (User, error) {
 	user := User{}
 
@@ -91,7 +91,7 @@ func GetUserInfo(username string) (User, error) {
 	}
 	defer stmt.Close()
 
-	//执行sql查询
+	// 执行查询的操作
 	err = stmt.QueryRow(username).Scan(&user.Username, &user.SignupAt)
 	if err != nil {
 		return user, err
