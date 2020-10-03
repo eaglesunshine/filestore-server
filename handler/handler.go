@@ -12,7 +12,10 @@ import (
 
 	dblayer "filestore-server/db"
 	"filestore-server/meta"
+	"filestore-server/store/ceph"
 	"filestore-server/util"
+
+	"gopkg.in/amz.v1/s3"
 )
 
 // UploadHandler ： 处理文件上传
@@ -55,6 +58,15 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		newFile.Seek(0, 0)
 		fileMeta.FileSha1 = util.FileSha1(newFile)
+
+		//同时将文件写入ceph存储
+		newFile.Seek(0, 0)
+		data, _ := ioutil.ReadAll(newFile)
+		bucket := ceph.GetCephBucket("userfile")
+		cephPath := "/ceph/" + fileMeta.FileSha1
+		_ = bucket.Put(cephPath, data, "octet-stream", s3.PublicRead)
+		fileMeta.Location = cephPath
+
 		// TODO: 处理异常情况，比如跳转到一个上传失败页面
 		_ = meta.UpdateFileMetaDB(fileMeta)
 
