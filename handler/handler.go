@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"filestore-server/mq"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,7 +16,6 @@ import (
 	dblayer "filestore-server/db"
 	"filestore-server/meta"
 	"filestore-server/store/ceph"
-	"filestore-server/store/oss"
 	"filestore-server/util"
 )
 
@@ -89,13 +89,28 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		} else if cfg.CurrentStoreType == cmn.StoreOSS {
 			// 文件写入OSS存储
 			ossPath := "oss/" + fileMeta.FileSha1
-			err = oss.Bucket().PutObject(ossPath, newFile)
-			if err != nil {
-				fmt.Println("upload oss err: " + err.Error())
-				w.Write([]byte("Upload failed!"))
-				return
+			// err = oss.Bucket().PutObject(ossPath, newFile)
+			// if err != nil {
+			// 	fmt.Println("upload oss err: " + err.Error())
+			// 	w.Write([]byte("Upload failed!"))
+			// 	return
+			// }
+			// fileMeta.Location = ossPath
+
+			data := mq.TransferData{
+				FileHash:      fileMeta.FileSha1,
+				CurLocation:   fileMeta.Location,
+				DestLocation:  ossPath,
+				DestStoreType: cmn.StoreOSS,
 			}
-			fileMeta.Location = ossPath
+			pubData, _ := json.Marshal(data)
+			suc := mq.Publish(
+				cfg.TransExchangeName,
+				cfg.TransOSSRoutingKey,
+				pubData)
+			if !suc {
+				//TODO:加入重新发送失败的消息
+			}
 		} else {
 			fileMeta.Location = mergePath
 		}
