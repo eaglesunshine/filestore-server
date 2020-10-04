@@ -79,7 +79,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			// 文件写入Ceph存储
 			data, _ := ioutil.ReadAll(newFile)
 			cephPath := "/ceph/" + fileMeta.FileSha1
-			err = ceph.PutObject("userfile", cephPath, data)
+			err = ceph.PutObject("testbucket1", cephPath, data)
 			if err != nil {
 				fmt.Println("upload ceph err: " + err.Error())
 				w.Write([]byte("Upload failed!"))
