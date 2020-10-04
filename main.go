@@ -35,8 +35,8 @@ func main() {
 		handler.HTTPInterceptor(handler.UploadPartHandler))
 	http.HandleFunc("/file/mpupload/complete",
 		handler.HTTPInterceptor(handler.CompleteUploadHandler))
-        http.HandleFunc("/file/mpupload/cancel",
-                handler.HTTPInterceptor(handler.CancelUploadHandler))
+	http.HandleFunc("/file/mpupload/cancel",
+		handler.HTTPInterceptor(handler.CancelUploadHandler))
 
 	// 用户相关接口
 	// http.HandleFunc("/", handler.SignInHandler)
@@ -46,7 +46,7 @@ func main() {
 
 	// 监听端口
 	fmt.Println("上传服务正在启动, 监听端口:8080...")
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe("127.0.0.1:8080", nil)
 	if err != nil {
 		fmt.Printf("Failed to start server, err:%s", err.Error())
 	}
