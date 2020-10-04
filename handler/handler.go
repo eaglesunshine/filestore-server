@@ -10,13 +10,25 @@ import (
 	"strconv"
 	"time"
 
+	cmn "filestore-server/common"
+	cfg "filestore-server/config"
 	dblayer "filestore-server/db"
 	"filestore-server/meta"
 	"filestore-server/store/ceph"
+	"filestore-server/store/oss"
 	"filestore-server/util"
-
-	"gopkg.in/amz.v1/s3"
 )
+
+func init() {
+	if err := os.MkdirAll(cfg.TempLocalRootDir, 0744); err != nil {
+		fmt.Println("无法指定目录用于存储临时文件: " + cfg.TempLocalRootDir)
+		os.Exit(1)
+	}
+	if err := os.MkdirAll(cfg.MergeLocalRootDir, 0744); err != nil {
+		fmt.Println("无法指定目录用于存储合并后文件: " + cfg.MergeLocalRootDir)
+		os.Exit(1)
+	}
+}
 
 // UploadHandler ： 处理文件上传
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,9 +49,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		defer file.Close()
 
+		tmpPath := cfg.TempLocalRootDir + head.Filename
 		fileMeta := meta.FileMeta{
 			FileName: head.Filename,
-			Location: "/tmp/" + head.Filename,
+			Location: tmpPath,
 			UploadAt: time.Now().Format("2006-01-02 15:04:05"),
 		}
 
@@ -59,13 +72,40 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		newFile.Seek(0, 0)
 		fileMeta.FileSha1 = util.FileSha1(newFile)
 
-		//同时将文件写入ceph存储
-		newFile.Seek(0, 0)
-		data, _ := ioutil.ReadAll(newFile)
-		bucket := ceph.GetCephBucket("userfile")
-		cephPath := "/ceph/" + fileMeta.FileSha1
-		_ = bucket.Put(cephPath, data, "octet-stream", s3.PublicRead)
-		fileMeta.Location = cephPath
+		// 5. 同步或异步将文件转移到Ceph/OSS
+		newFile.Seek(0, 0) // 游标重新回到文件头部
+		mergePath := cfg.MergeLocalRootDir + fileMeta.FileSha1
+		if cfg.CurrentStoreType == cmn.StoreCeph {
+			// 文件写入Ceph存储
+			data, _ := ioutil.ReadAll(newFile)
+			cephPath := "/ceph/" + fileMeta.FileSha1
+			err = ceph.PutObject("userfile", cephPath, data)
+			if err != nil {
+				fmt.Println("upload ceph err: " + err.Error())
+				w.Write([]byte("Upload failed!"))
+				return
+			}
+			fileMeta.Location = cephPath
+		} else if cfg.CurrentStoreType == cmn.StoreOSS {
+			// 文件写入OSS存储
+			ossPath := "oss/" + fileMeta.FileSha1
+			err = oss.Bucket().PutObject(ossPath, newFile)
+			if err != nil {
+				fmt.Println("upload oss err: " + err.Error())
+				w.Write([]byte("Upload failed!"))
+				return
+			}
+			fileMeta.Location = ossPath
+		} else {
+			fileMeta.Location = mergePath
+		}
+		// (普通上传/分块上传)本地文件统一存储到mergePath
+		err = os.Rename(tmpPath, mergePath)
+		if err != nil {
+			fmt.Println("move local file err: " + err.Error())
+			w.Write([]byte("Upload failed!"))
+			return
+		}
 
 		// TODO: 处理异常情况，比如跳转到一个上传失败页面
 		_ = meta.UpdateFileMetaDB(fileMeta)

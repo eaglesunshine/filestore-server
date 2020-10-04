@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 )
 
 type Sha1Stream struct {
@@ -70,6 +71,15 @@ func GetFileSize(filename string) int64 {
 		return nil
 	})
 	return result
+}
+
+// Hex2Dec: 十六进制转十进制
+func Hex2Dec(val string) int64 {
+	n, err := strconv.ParseInt(val, 16, 0)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return n
 }
 
 // Contain : 判断某个元素是否在 slice,array ,map中

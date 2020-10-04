@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"filestore-server/util"
 	fsUtil "filestore-server/util"
 	"fmt"
 	"io"
@@ -40,15 +39,12 @@ func uploadPartsSpecified(filename string, targetURL string, chunkSize int, chun
 			continue
 		}
 
-        // 可以不使用bufCopied, 直接传将buf slice作为参数传递(值传递)进去计算sha1
 		bufCopied := make([]byte, 5*1048576)
 		copy(bufCopied, buf)
 
 		go func(b []byte, curIdx int) {
-			chkhash := util.Sha1(b)
-
 			resp, err := http.Post(
-				targetURL+"&index="+strconv.Itoa(curIdx)+"&chkhash="+chkhash,
+				targetURL+"&index="+strconv.Itoa(curIdx),
 				"multipart/form-data",
 				bytes.NewReader(b))
 			if err != nil {

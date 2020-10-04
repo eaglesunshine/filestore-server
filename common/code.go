@@ -17,6 +17,6 @@ const (
 	StatusLoginFailed
 	// StatusInvalidToken : 10005 token无效
 	StatusInvalidToken
-        // FileAlreadExists : 10006 文件已存在
-        FileAlreadExists
+	// FileAlreadExists : 10006 文件已存在
+	FileAlreadExists
 )

@@ -34,7 +34,7 @@ func OnFileUploadFinished(filehash string, filename string,
 	}
 	if rf, err := ret.RowsAffected(); nil == err {
 		if rf <= 0 {
-			fmt.Printf("File with hash:%s has been uploaded before\n", filehash)
+			fmt.Printf("File with hash:%s has been uploaded before", filehash)
 		}
 		return true
 	}
@@ -111,7 +111,6 @@ func GetFileMetaList(limit int) ([]TableFile, error) {
 		}
 		tfiles = append(tfiles, tfile)
 	}
-	fmt.Println(len(tfiles))
 	return tfiles, nil
 }
 

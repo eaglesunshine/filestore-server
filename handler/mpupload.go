@@ -15,6 +15,7 @@ import (
 
 	rPool "filestore-server/cache/redis"
 	cmn "filestore-server/common"
+	cfg "filestore-server/config"
 	dblayer "filestore-server/db"
 )
 
@@ -31,9 +32,9 @@ type MultipartUploadInfo struct {
 
 const (
 	// ChunkDir : 上传的分块所在目录
-	ChunkDir = "/data/chunks/"
+	ChunkDir = cfg.ChunckLocalRootDir
 	// MergeDir : 合并后的文件所在目录
-	MergeDir = "/data/merge/"
+	MergeDir = cfg.MergeLocalRootDir
 	// ChunkKeyPrefix : 分块信息对应的redis键前缀
 	ChunkKeyPrefix = "MP_"
 	// HashUpIDKeyPrefix : 文件hash映射uploadid对应的redis键前缀
@@ -138,7 +139,6 @@ func UploadPartHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	//	username := r.Form.Get("username")
 	uploadID := r.Form.Get("uploadid")
-	chunkSha1 := r.Form.Get("chkhash")
 	chunkIndex := r.Form.Get("index")
 
 	// 2. 获得redis连接池中的一个连接
@@ -162,15 +162,6 @@ func UploadPartHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
-	}
-
-	// 校验分块hash (updated at 2020-05)
-	cmpSha1, err := util.ComputeSha1ByShell(fpath)
-	if err != nil || cmpSha1 != chunkSha1 {
-		fmt.Printf("Verify chunk sha1 failed, compare OK: %t, err:%+v\n",
-			cmpSha1 == chunkSha1, err)
-		w.Write(util.NewRespMsg(-2, "Verify hash failed, chkIdx:"+chunkIndex, nil).JSONBytes())
-		return
 	}
 
 	// 4. 更新redis缓存状态
