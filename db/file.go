@@ -118,6 +118,7 @@ func UpdateFileLocation(filehash string, fileaddr string) bool {
 	if rf, err := ret.RowsAffected(); nil == err {
 		if rf <= 0 {
 			fmt.Printf("更新文件location失败, filehash:%s", filehash)
+			return false
 		}
 		return true
 	}

@@ -6,8 +6,9 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/go-sql-driver/mysql"
 	cfg "filestore-server/config"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var db *sql.DB
