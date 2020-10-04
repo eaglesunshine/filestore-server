@@ -38,6 +38,8 @@ func Sha1(data []byte) string {
 func FileSha1(file *os.File) string {
 	_sha1 := sha1.New()
 	io.Copy(_sha1, file)
+	// reset cursor
+	file.Seek(0, 0)
 	return hex.EncodeToString(_sha1.Sum(nil))
 }
 
@@ -50,6 +52,8 @@ func MD5(data []byte) string {
 func FileMD5(file *os.File) string {
 	_md5 := md5.New()
 	io.Copy(_md5, file)
+	// reset cursor
+	file.Seek(0, 0)
 	return hex.EncodeToString(_md5.Sum(nil))
 }
 

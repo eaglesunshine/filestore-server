@@ -139,6 +139,7 @@ func UploadPartHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	//	username := r.Form.Get("username")
 	uploadID := r.Form.Get("uploadid")
+	chunkSha1 := r.Form.Get("chkhash")
 	chunkIndex := r.Form.Get("index")
 
 	// 2. 获得redis连接池中的一个连接
@@ -162,6 +163,15 @@ func UploadPartHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
+	}
+
+	// 校验分块hash (updated at 2020-05)
+	cmpSha1, err := util.ComputeSha1ByShell(fpath)
+	if err != nil || cmpSha1 != chunkSha1 {
+		fmt.Printf("Verify chunk sha1 failed, compare OK: %t, err:%+v\n",
+			cmpSha1 == chunkSha1, err)
+		w.Write(util.NewRespMsg(-2, "Verify hash failed, chkIdx:"+chunkIndex, nil).JSONBytes())
+		return
 	}
 
 	// 4. 更新redis缓存状态

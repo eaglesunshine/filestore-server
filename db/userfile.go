@@ -20,7 +20,7 @@ type UserFile struct {
 func OnUserFileUploadFinished(username, filehash, filename string, filesize int64) bool {
 	stmt, err := mydb.DBConn().Prepare(
 		"insert ignore into tbl_user_file (`user_name`,`file_sha1`,`file_name`," +
-			"`file_size`,`upload_at`,`status`) values (?,?,?,?,?,1)")
+			"`file_size`,`upload_at`) values (?,?,?,?,?)")
 	if err != nil {
 		return false
 	}
@@ -37,7 +37,7 @@ func OnUserFileUploadFinished(username, filehash, filename string, filesize int6
 func QueryUserFileMetas(username string, limit int) ([]UserFile, error) {
 	stmt, err := mydb.DBConn().Prepare(
 		"select file_sha1,file_name,file_size,upload_at," +
-			"last_update from tbl_user_file where user_name=? and status!=2 limit ?")
+			"last_update from tbl_user_file where user_name=? limit ?")
 	if err != nil {
 		return nil, err
 	}
@@ -62,24 +62,6 @@ func QueryUserFileMetas(username string, limit int) ([]UserFile, error) {
 	return userFiles, nil
 }
 
-// RenameFileName : 文件重命名
-func RenameFileName(username, filehash, filename string) bool {
-	stmt, err := mydb.DBConn().Prepare(
-		"update tbl_user_file set file_name=? where user_name=? and file_sha1=? limit 1")
-	if err != nil {
-		fmt.Println(err.Error())
-		return false
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(filename, username, filehash)
-	if err != nil {
-		fmt.Println(err.Error())
-		return false
-	}
-	return true
-}
-
 // DeleteUserFile : 删除文件(标记删除)
 func DeleteUserFile(username, filehash string) bool {
 	stmt, err := mydb.DBConn().Prepare(
@@ -91,6 +73,24 @@ func DeleteUserFile(username, filehash string) bool {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(username, filehash)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	return true
+}
+
+// RenameFileName : 文件重命名
+func RenameFileName(username, filehash, filename string) bool {
+	stmt, err := mydb.DBConn().Prepare(
+		"update tbl_user_file set file_name=? where user_name=? and file_sha1=? limit 1")
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(filename, username, filehash)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -129,7 +129,7 @@ func QueryUserFileMeta(username string, filehash string) (*UserFile, error) {
 // IsUserFileUploaded : 用户文件是否已经上传过
 func IsUserFileUploaded(username string, filehash string) bool {
 	stmt, err := mydb.DBConn().Prepare(
-		"select 1 from tbl_user_file where user_name=? and file_sha1=? and status=1 limit 1")
+		"select 1 from tbl_user_file where user_name=? and file_sha1=? limit 1")
 	rows, err := stmt.Query(username, filehash)
 	if err != nil {
 		return false

@@ -1,9 +1,8 @@
 package meta
 
 import (
-	"sort"
-
 	mydb "filestore-server/db"
+	"sort"
 )
 
 // FileMeta : 文件元信息结构
@@ -26,9 +25,30 @@ func UpdateFileMeta(fmeta FileMeta) {
 	fileMetas[fmeta.FileSha1] = fmeta
 }
 
+// UpdateFileMetaDB : 新增/更新文件元信息到mysql中
+func UpdateFileMetaDB(fmeta FileMeta) bool {
+	return mydb.OnFileUploadFinished(
+		fmeta.FileSha1, fmeta.FileName, fmeta.FileSize, fmeta.Location)
+}
+
 // GetFileMeta : 通过sha1值获取文件的元信息对象
 func GetFileMeta(fileSha1 string) FileMeta {
 	return fileMetas[fileSha1]
+}
+
+// GetFileMetaDB : 从mysql获取文件元信息
+func GetFileMetaDB(fileSha1 string) (*FileMeta, error) {
+	tfile, err := mydb.GetFileMeta(fileSha1)
+	if tfile == nil || err != nil {
+		return nil, err
+	}
+	fmeta := FileMeta{
+		FileSha1: tfile.FileHash,
+		FileName: tfile.FileName.String,
+		FileSize: tfile.FileSize.Int64,
+		Location: tfile.FileAddr.String,
+	}
+	return &fmeta, nil
 }
 
 // GetLastFileMetas : 获取批量的文件元信息列表
@@ -40,26 +60,6 @@ func GetLastFileMetas(count int) []FileMeta {
 
 	sort.Sort(ByUploadTime(fMetaArray))
 	return fMetaArray[0:count]
-}
-
-// RemoveFileMeta : 删除元信息
-func RemoveFileMeta(fileSha1 string) {
-	delete(fileMetas, fileSha1)
-}
-
-// GetFileMetaDB : 从mysql获取文件元信息
-func GetFileMetaDB(fileSha1 string) (FileMeta, error) {
-	tfile, err := mydb.GetFileMeta(fileSha1)
-	if err != nil || tfile == nil {
-		return FileMeta{}, err
-	}
-	fmeta := FileMeta{
-		FileSha1: tfile.FileHash,
-		FileName: tfile.FileName.String,
-		FileSize: tfile.FileSize.Int64,
-		Location: tfile.FileAddr.String,
-	}
-	return fmeta, nil
 }
 
 // GetLastFileMetasDB : 批量从mysql获取文件元信息
@@ -81,13 +81,7 @@ func GetLastFileMetasDB(limit int) ([]FileMeta, error) {
 	return tfilesm, nil
 }
 
-// UpdateFileMetaDB : 新增/更新文件元信息到mysql中
-func UpdateFileMetaDB(fmeta FileMeta) bool {
-	return mydb.OnFileUploadFinished(
-		fmeta.FileSha1, fmeta.FileName, fmeta.FileSize, fmeta.Location)
-}
-
-// OnFileRemovedDB : 删除文件
-func OnFileRemovedDB(filehash string) bool {
-	return mydb.OnFileRemoved(filehash)
+// RemoveFileMeta : 删除元信息
+func RemoveFileMeta(fileSha1 string) {
+	delete(fileMetas, fileSha1)
 }

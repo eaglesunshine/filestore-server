@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"filestore-server/util"
 	fsUtil "filestore-server/util"
 	"fmt"
 	"io"
@@ -43,8 +44,10 @@ func uploadPartsSpecified(filename string, targetURL string, chunkSize int, chun
 		copy(bufCopied, buf)
 
 		go func(b []byte, curIdx int) {
+			chkhash := util.Sha1(b)
+
 			resp, err := http.Post(
-				targetURL+"&index="+strconv.Itoa(curIdx),
+				targetURL+"&index="+strconv.Itoa(curIdx)+"&chkhash="+chkhash,
 				"multipart/form-data",
 				bytes.NewReader(b))
 			if err != nil {

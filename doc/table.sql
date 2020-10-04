@@ -1,3 +1,4 @@
+-- 创建文件表
 CREATE TABLE `tbl_file` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `file_sha1` char(40) NOT NULL DEFAULT '' COMMENT '文件hash',
@@ -14,6 +15,7 @@ CREATE TABLE `tbl_file` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- 创建用户表
 CREATE TABLE `tbl_user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_name` varchar(64) NOT NULL DEFAULT '' COMMENT '用户名',
@@ -29,8 +31,9 @@ CREATE TABLE `tbl_user` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_username` (`user_name`),
   KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4;
 
+-- 创建用户token表
 CREATE TABLE `tbl_user_token` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_name` varchar(64) NOT NULL DEFAULT '' COMMENT '用户名',
@@ -54,4 +57,3 @@ CREATE TABLE `tbl_user_file` (
   KEY `idx_status` (`status`),
   KEY `idx_user_id` (`user_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-

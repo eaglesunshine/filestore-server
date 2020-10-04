@@ -10,7 +10,7 @@ import (
 var (
 	pool      *redis.Pool
 	redisHost = "127.0.0.1:6379"
-	redisPass = ""
+	redisPass = "testupload"
 )
 
 // newRedisPool : 创建redis连接池
